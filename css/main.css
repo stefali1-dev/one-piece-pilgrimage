@@ -1,0 +1,287 @@
+/* main.css — scene architecture: stage, world, ground, camera, overlays.
+   Law: per-frame motion is transform/opacity only, on the few will-change layers. */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow: hidden; background: #04060c; }
+
+#stage {
+  position: fixed; inset: 0;
+  overflow: hidden;
+  perspective: 1300px;
+  perspective-origin: 50% 30%;
+  cursor: none;
+}
+
+/* ---------- sky (fixed backdrop, crossfaded by JS via opacity) ---------- */
+#sky { position: absolute; inset: 0; }
+#skyA, #skyB { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
+#skyB { opacity: 0; }
+
+/* celestial bodies: anchored at the camera point; per-frame transform moves them */
+#celestial { position: absolute; inset: 0; will-change: transform; }
+
+/* drifting soft clouds — layered radial paint, transform-only drift */
+#clouds { position: absolute; inset: 0; transition: opacity 3s ease; }
+.cloud {
+  position: absolute; width: 380px; height: 110px; opacity: 0.4;
+  background:
+    radial-gradient(60% 70% at 32% 62%, rgba(255,250,242,0.85), rgba(255,250,242,0) 70%),
+    radial-gradient(50% 62% at 58% 48%, rgba(255,250,242,0.7), rgba(255,250,242,0) 72%),
+    radial-gradient(38% 52% at 80% 60%, rgba(255,248,238,0.55), rgba(255,248,238,0) 74%);
+  animation: cloud-pass linear infinite;
+  will-change: transform;
+}
+.cloud.c1 { top: 12%; animation-duration: 95s; }
+.cloud.c2 { top: 24%; width: 300px; height: 90px; opacity: 0.3; animation-duration: 130s; animation-delay: -60s; }
+.cloud.c3 { top: 6%; width: 460px; height: 120px; opacity: 0.22; animation-duration: 160s; animation-delay: -110s; }
+@keyframes cloud-pass {
+  from { transform: translate3d(-30vw, 0, 0); }
+  to   { transform: translate3d(115vw, -12px, 0); }
+}
+#stage.z0 #clouds { opacity: 0.55; }
+#stage.z5 #clouds { opacity: 0.14; }
+
+#celestial .sun {
+  position: absolute; left: 50%; top: 42%;
+  width: 120px; height: 120px; margin: -60px 0 0 -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 40%, #fff4d6 0%, #ffd98f 45%, rgba(255,205,120,0) 72%);
+}
+#celestial .moon {
+  position: absolute; left: 50%; top: 42%;
+  width: 74px; height: 74px; margin: -37px 0 0 -37px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 38%, #f4f2ff 0%, #d8d4f0 55%, rgba(210,206,240,0) 75%);
+  opacity: 0;
+}
+#celestial .stars {
+  position: absolute; inset: 0; opacity: 0; will-change: opacity;
+  background-image:
+    radial-gradient(2.2px 2.2px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 28% 8%, #ffe9c9 50%, transparent 51%),
+    radial-gradient(2.4px 2.4px at 44% 22%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 61% 12%, #dfe8ff 50%, transparent 51%),
+    radial-gradient(2.0px 2.0px at 73% 26%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 86% 9%, #ffe9c9 50%, transparent 51%),
+    radial-gradient(2.4px 2.4px at 93% 21%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 8% 34%, #fff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 36% 38%, #dfe8ff 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 55% 33%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 79% 40%, #ffe9c9 50%, transparent 51%),
+    radial-gradient(2.0px 2.0px at 20% 47%, #fff 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 67% 49%, #dfe8ff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 50% 6%, #fff 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 3% 22%, #ffe9c9 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 97% 34%, #fff 50%, transparent 51%);
+}
+
+/* ---------- the diorama ---------- */
+#world {
+  position: absolute; left: 50%; top: 42%;
+  width: 0; height: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+  /* per frame: rotateX(55deg) translate3d(-camX, -camY, 0) — tilt first, then
+     travel inside the tilted plane so the plane never crosses the camera */
+}
+#ground {
+  position: absolute;
+  left: -1300px; top: -19200px;   /* ground-local coords == world coords */
+  width: 2600px; height: 19800px;
+  transform-style: preserve-3d;
+  background: #0a1020;
+}
+
+/* zone sections tile the ground; palette vars come from zones.css.
+   #entities is a 0x0 anchor at world (0,0), so zones span the strip explicitly. */
+.zone { position: absolute; left: -1300px; width: 2600px; }
+
+/* entities (player, npcs, merry) sit on the ground as upright billboards */
+.billboard {
+  position: absolute; left: 0; top: 0;
+  width: 0; height: 0;
+  transform-style: preserve-3d;
+}
+.billboard .char {
+  position: absolute; left: -40px; top: -120px;
+  width: 80px; height: 120px;
+  transform: rotateX(-55deg);
+  transform-origin: 50% 100%;
+}
+
+/* water shimmer: oversized repeating-gradient sheet, translated by exactly one
+   period per loop — compositor-only "moving water" */
+.water-shimmer {
+  position: absolute; left: 0; top: -40%;
+  width: 100%; height: 180%;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    178deg,
+    rgba(255,255,255,0) 0px,
+    rgba(255,255,255,0) 22px,
+    rgba(220,240,255,0.05) 26px,
+    rgba(255,255,255,0) 34px
+  );
+  animation: shimmer-drift 7s linear infinite;
+  will-change: transform;
+}
+@keyframes shimmer-drift {
+  from { transform: translate3d(0,0,0); }
+  to   { transform: translate3d(0,-96px,0); }
+}
+
+/* the Merry mounts herself (self-rotating billboard in zones.css) — no wrapper needed */
+
+/* tossed tangerine dot (Nami's beat) */
+.billboard .toss-dot {
+  position: absolute; left: -9px; top: -9px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffb347, #e8862e);
+}
+
+/* wake rings behind the sailing Merry (ground-plane decals) */
+.wake {
+  position: absolute; margin-left: -36px; margin-top: -14px;
+  width: 72px; height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(210,230,255,0.34);
+  background: rgba(210,230,255,0.05);
+  animation: wake-fade 1.7s ease-out forwards;
+}
+@keyframes wake-fade {
+  from { transform: translate3d(0,0,1px) scale(0.55); opacity: 0.85; }
+  to   { transform: translate3d(0,46px,1px) scale(1.7); opacity: 0; }
+}
+
+/* ---------- atmosphere (director layer) ---------- */
+/* god rays: three soft diagonal bars, shown per zone via #stage.zN classes */
+#rays {
+  position: absolute; inset: -12% -6%;
+  pointer-events: none; opacity: 0;
+  transition: opacity 2.5s ease;
+  background:
+    linear-gradient(104deg, rgba(255,222,150,0) 40%, rgba(255,222,150,0.09) 47%, rgba(255,222,150,0) 55%),
+    linear-gradient(99deg, rgba(255,232,170,0) 58%, rgba(255,232,170,0.07) 66%, rgba(255,232,170,0) 74%),
+    linear-gradient(109deg, rgba(255,210,130,0) 12%, rgba(255,210,130,0.06) 20%, rgba(255,210,130,0) 28%);
+  animation: rays-sway 11s ease-in-out infinite alternate;
+}
+@keyframes rays-sway {
+  from { transform: translate3d(-10px, 0, 0) rotate(-0.4deg); }
+  to   { transform: translate3d(14px, -8px, 0) rotate(0.5deg); }
+}
+#stage.z0 #rays { opacity: 0.55; }
+#stage.z3 #rays, #stage.z4 #rays { opacity: 1; }
+
+/* character ground shadows (flat decals inside billboards) */
+.drop-shadow {
+  position: absolute; left: -30px; top: -15px;
+  width: 60px; height: 26px; border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(18,14,38,0.5) 0%, rgba(18,14,38,0) 70%);
+  transition: transform 1.5s ease, opacity 1.5s ease;
+}
+#stage.z3 .drop-shadow, #stage.z4 .drop-shadow {
+  transform: rotate(-9deg) scaleX(1.9) translateX(-10px);
+  background: radial-gradient(ellipse at 32% 50%, rgba(70,34,54,0.24) 0%, rgba(70,34,54,0) 75%);
+}
+
+/* footstep puffs (land) and ripples (water) — ground decals, one-shot.
+   Placement via left/top + margins; transform belongs to the animation. */
+.puff {
+  position: absolute; margin-left: -11px; margin-top: -6px;
+  width: 22px; height: 13px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(232,216,182,0.5), rgba(232,216,182,0) 70%);
+  animation: puff-fade 0.55s ease-out forwards;
+}
+@keyframes puff-fade {
+  from { transform: translate3d(0,0,1px) scale(0.5); opacity: 0.9; }
+  to   { transform: translate3d(0,-30px,1px) scale(1.7); opacity: 0; }
+}
+.step-ripple {
+  position: absolute; margin-left: -16px; margin-top: -8px;
+  width: 32px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(200,224,255,0.28);
+  animation: ripple-fade 0.7s ease-out forwards;
+}
+@keyframes ripple-fade {
+  from { transform: translate3d(0,0,1px) scale(0.4); opacity: 0.9; }
+  to   { transform: translate3d(0,10px,1px) scale(1.5); opacity: 0; }
+}
+
+/* cloud shadows: two huge soft blobs drifting over the whole trail */
+.cloud-shadow {
+  position: absolute; left: -450px; top: -260px;
+  width: 900px; height: 520px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(10,12,30,0.11), rgba(10,12,30,0) 65%);
+  animation: cloud-drift 68s ease-in-out infinite alternate;
+  will-change: transform;
+}
+.cloud-shadow.cs-b { animation-duration: 92s; animation-delay: -30s; }
+@keyframes cloud-drift {
+  from { transform: translate3d(-160px, -320px, 2px); }
+  to   { transform: translate3d(240px, 280px, 2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .water-shimmer, .cloud-shadow, #rays { animation: none; }
+}
+
+/* off-zone always-on animations paused — the compositor shouldn't tick
+   what the camera can't see (perf audit finding 3b) */
+#stage:not(.z0) .zone-dawn .water-shimmer,
+#stage:not(.z4) .zone-baratie .water-shimmer,
+#stage:not(.z5) .zone-finale .water-shimmer,
+#stage:not(.z3) .merry-syrup .merry-pennant,
+#stage:not(.z5) .merry-dock .merry-pennant,
+#stage:not(.z3) .ka-kaya { animation-play-state: paused; }
+
+/* ---------- global overlays ---------- */
+#tintA, #tintB { position: absolute; inset: 0; opacity: 0; pointer-events: none; will-change: opacity; }
+#vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 42%, rgba(0,0,0,0) 52%, rgba(8,6,18,0.38) 100%);
+}
+#fade {
+  position: absolute; inset: 0; pointer-events: none;
+  background: #000; opacity: 1; will-change: opacity;
+  animation: fade-in 3.2s ease-out 0.35s forwards;
+}
+@keyframes fade-in { to { opacity: 0; } }
+
+/* mute glyph: pure CSS speaker, shown ~1.4s on toggle */
+#mute-glyph {
+  position: absolute; right: 34px; bottom: 30px;
+  width: 46px; height: 40px;
+  opacity: 0; pointer-events: none;
+}
+#mute-glyph.show { animation: glyph-flash 1.4s ease-out forwards; }
+@keyframes glyph-flash { 0% { opacity: 0; } 12% { opacity: 0.9; } 70% { opacity: 0.9; } 100% { opacity: 0; } }
+#mute-glyph .cone {
+  position: absolute; left: 8px; top: 13px;
+  width: 0; height: 0;
+  border-top: 7px solid transparent; border-bottom: 7px solid transparent;
+  border-right: 12px solid rgba(255,246,224,0.92);
+}
+#mute-glyph .box {
+  position: absolute; left: 3px; top: 12px;
+  width: 8px; height: 14px;
+  border-radius: 2px;
+  background: rgba(255,246,224,0.92);
+}
+#mute-glyph .wave {
+  position: absolute; left: 24px; top: 9px;
+  width: 16px; height: 20px;
+  border: 3px solid rgba(255,246,224,0.92);
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+}
+#mute-glyph .slash {
+  position: absolute; left: 2px; top: 18px;
+  width: 40px; height: 4px;
+  border-radius: 2px;
+  background: rgba(255,120,110,0.95);
+  transform: rotate(-32deg);
+  display: none;
+}
+#mute-glyph.muted .wave { display: none; }
+#mute-glyph.muted .slash { display: block; }

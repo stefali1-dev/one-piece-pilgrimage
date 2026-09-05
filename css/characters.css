@@ -1,0 +1,1067 @@
+/* characters.css — the V2 crew rigs (rig specialist).
+   Law: every animated property in this file is transform or opacity. No blur,
+   no box-shadow, no filter anywhere. Walk cycles and gestures start AND end
+   at each part's resting transform so class toggles never snap.
+   Structure: .char (engine-owned, 80x120, never restyled here)
+   > .rig (flip ONLY, never animated) > .fig (bob/breathe/gesture root)
+   > legs + .upper (far arm, torso, hip gear, .headw, near arm) + hand props.
+   .headw wraps head + headgear so nods carry hats, hair, goatees.
+   Painted silhouettes (clip-path) come from PIL.paint registrations in
+   js/characters.js; painted parts are childless, detail = ::before/::after
+   kept inside each silhouette. Palettes are CSS vars per character so zone
+   light can tint later. Proportions differ per character on purpose. */
+
+.char { transform-style: preserve-3d; }
+
+/* the flip — nothing below ever animates .rig, so .is-left always wins */
+.rig { position: absolute; inset: 0; }
+.char.is-left .rig { transform: scaleX(-1); }
+
+.fig   { position: absolute; inset: 0; transform-origin: 50% 100%; }
+.upper { position: absolute; inset: 0; transform-origin: 50% 72%; }
+.part  { position: absolute; }
+.headw { position: absolute; transform-origin: 50% 92%; }
+
+/* limbs: pivot just inside the element (hip / shoulder) */
+.leg {
+  bottom: 0;
+  transform-origin: 50% 4px;
+  border-radius: 5px 5px 4px 4px;
+}
+.arm {
+  transform-origin: 50% 5px;
+  border-radius: 5px;
+}
+
+/* ---------- locomotion (shared keyframes, per-character amplitude vars) ----
+   Neutral at 0% and 100%; extremes at 25%/75%; linear timing passes exactly
+   through neutral at 50%, so the opposite-phase limb (-50% delay) also starts
+   and ends neutral. */
+@keyframes leg-swing {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(var(--leg, 22deg)); }
+  75%  { transform: rotate(calc(var(--leg, 22deg) * -1)); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes arm-swing {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(calc(var(--arm, 18deg) * -1)); }
+  75%  { transform: rotate(var(--arm, 18deg)); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes fig-bob {
+  0%   { transform: translateY(0); }
+  25%  { transform: translateY(calc(var(--bob, 3px) * -1)); }
+  50%  { transform: translateY(0); }
+  75%  { transform: translateY(calc(var(--bob, 3px) * -1)); }
+  100% { transform: translateY(0); }
+}
+@keyframes idle-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2.2px); }
+}
+
+.char.is-walk .leg-a { animation: leg-swing var(--step, .46s) linear infinite; }
+.char.is-walk .leg-b { animation: leg-swing var(--step, .46s) linear infinite; animation-delay: calc(var(--step, .46s) * -.5); }
+.char.is-walk .arm-a { animation: arm-swing var(--step, .46s) linear infinite; animation-delay: calc(var(--step, .46s) * -.5); }
+.char.is-walk .arm-b { animation: arm-swing var(--step, .46s) linear infinite; }
+.char.is-walk .fig   { animation: fig-bob var(--step, .46s) linear infinite; }
+.char:not(.is-walk) .fig { animation: idle-breathe 3.4s ease-in-out infinite; }
+/* zeff's arms stay crossed even on the move — an old man's trot */
+.char-zeff.is-walk .arm-a,
+.char-zeff.is-walk .arm-b { animation: none; }
+
+/* =====================================================================
+   LUFFY — slim, lean, compact. Big young head, narrow tapered vest,
+   slim limbs, quick bouncy stride. Straw hat = wide soft brim + domed
+   crown + red ribbon. Messy black hair peeking under the brim, scar
+   under the left eye, blue knee-length shorts with a lighter cuff.
+   ===================================================================== */
+.char-luffy {
+  --step: .44s; --leg: 26deg; --arm: 22deg; --bob: 3.5px;
+  --skin: #f5c99b; --skin-d: #e0ac7d;
+  --c1: #d9483b; --c2: #3e63ac;
+  --hat: #ecd489; --band: #c23b32; --hair: #26221e;
+}
+.char-luffy .leg { width: 10px; height: 40px; }
+.char-luffy .leg-a { left: 30px; }  .char-luffy .leg-b { left: 41px; }
+.char-luffy .leg {
+  background:
+    linear-gradient(100deg, rgba(20,16,30,0) 42%, rgba(20,16,30,.16) 100%),
+    linear-gradient(to bottom, var(--c2) 0 40%, #617fb9 40% 52%, #37589f 52% 55%, var(--skin) 57% 92%, #d9a877 92% 100%);
+}
+.char-luffy .leg-a {
+  background:
+    linear-gradient(100deg, rgba(20,16,30,0) 34%, rgba(20,16,30,.26) 100%),
+    linear-gradient(to bottom, #365593 0 40%, #54709f 40% 52%, #33508b 52% 55%, var(--skin-d) 57% 92%, #cd9d6d 92% 100%);
+}
+.char-luffy .leg::after {              /* sandal: skin foot over dark sole */
+  content: ""; position: absolute; left: -2px; right: -2px; bottom: -1px; height: 5px;
+  border-radius: 3px 3px 2px 2px;
+  background: linear-gradient(to bottom, var(--skin) 0 55%, #6e5236 55% 100%);
+}
+.char-luffy .arm { width: 8px; height: 30px; bottom: 49px; }
+.char-luffy .arm-a { left: 17px; }  .char-luffy .arm-b { left: 55px; }
+.char-luffy .arm-a { background-color: var(--skin-d); background-image: linear-gradient(100deg, rgba(20,16,30,0) 36%, rgba(20,16,30,.22) 100%); }
+.char-luffy .arm-b { background-color: var(--skin);    background-image: linear-gradient(100deg, rgba(20,16,30,0) 46%, rgba(20,16,30,.10) 100%); }
+.char-luffy .arm::after {             /* bare hand */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 9px; height: 8px;
+  margin-left: -4.5px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-luffy .torso { left: 22px; bottom: 36px; width: 36px; height: 40px; }
+.char-luffy .torso {
+  background:
+    radial-gradient(circle at 30% 18%, rgba(255,240,220,.22), rgba(255,240,220,0) 55%),
+    linear-gradient(100deg, #e25a4a 0%, var(--c1) 45%, #a83529 100%);
+}
+.char-luffy .torso::before {          /* open vest: skin V at the chest */
+  content: ""; position: absolute; left: 24%; top: 2%; width: 52%; height: 56%;
+  background: linear-gradient(to bottom, var(--skin), var(--skin-d));
+  clip-path: polygon(14% 0, 86% 0, 66% 100%, 34% 100%);
+}
+.char-luffy .torso::after {           /* rolled vest collar highlight */
+  content: ""; position: absolute; left: 8%; right: 8%; top: 0; height: 11%;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, rgba(255,235,200,.28), rgba(255,235,200,0));
+}
+.char-luffy .headw { left: 0; top: 8px; width: 80px; height: 48px; }
+.char-luffy .headw::before {          /* neck */
+  content: ""; position: absolute; left: 36px; top: 34px; width: 8px; height: 9px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #d3a270);
+}
+.char-luffy .head { left: 26px; top: 12px; width: 28px; height: 26px; }
+.char-luffy .head {
+  background:
+    linear-gradient(180deg, rgba(96,60,28,.30) 0 16%, rgba(96,60,28,0) 30%),
+    radial-gradient(circle at 36% 34%, #fadcb8, var(--skin) 74%);
+}
+.char-luffy .head::before {           /* big round eyes */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(2.3px 2.3px at 32% 54%, #33241a 58%, rgba(51,36,26,0) 62%),
+    radial-gradient(2.3px 2.3px at 68% 54%, #33241a 58%, rgba(51,36,26,0) 62%);
+}
+.char-luffy .head::after {            /* scar: two tiny lines under the left eye */
+  content: ""; position: absolute; left: 56%; top: 64%; width: 30%; height: 16%;
+  background:
+    linear-gradient(72deg, rgba(0,0,0,0) 40%, #c08a5e 44% 56%, rgba(0,0,0,0) 60%) left 26% top 0 / 30% 100% no-repeat,
+    linear-gradient(64deg, rgba(0,0,0,0) 40%, #c08a5e 44% 56%, rgba(0,0,0,0) 60%) right 10% top 0 / 30% 100% no-repeat;
+}
+.char-luffy .lf-hair { left: 24px; top: 9px; width: 32px; height: 16px; }
+.char-luffy .lf-hair {
+  background:
+    radial-gradient(4px 2px at 30% 55%, rgba(90,75,60,.5), rgba(90,75,60,0) 70%),
+    radial-gradient(3px 2px at 62% 45%, rgba(90,75,60,.4), rgba(90,75,60,0) 70%),
+    linear-gradient(to bottom, #2e2a26, var(--hair) 60%, #171512);
+}
+.char-luffy .lf-brim { left: 13px; top: 8px; width: 54px; height: 13px; }
+.char-luffy .lf-brim {
+  background:
+    repeating-linear-gradient(88deg, rgba(140,105,45,.10) 0 2px, rgba(140,105,45,0) 2px 5px),
+    radial-gradient(ellipse at 50% 28%, #f7e5a8 0%, #e9d183 55%, #cfae5e 100%);
+}
+.char-luffy .lf-crown { left: 27px; top: -8px; width: 26px; height: 18px; }
+.char-luffy .lf-crown {
+  background:
+    repeating-linear-gradient(0deg, rgba(140,105,45,.09) 0 2px, rgba(140,105,45,0) 2px 4px),
+    linear-gradient(to bottom, #f4de9a 0%, #e5cb78 70%, #d6b864 100%);
+}
+.char-luffy .lf-crown::after {        /* red ribbon band */
+  content: ""; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 5px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, #d24a3c, var(--band));
+}
+@keyframes idle-lu {                  /* springy little bounce */
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50%      { transform: translateY(-2.6px) scale(1.004, .996); }
+}
+.char-luffy:not(.is-walk) .fig { animation: idle-lu 3.4s ease-in-out infinite; }
+
+/* =====================================================================
+   ZORO — broad, muscular, heavy. Wide slab torso, thick neck and limbs,
+   wide stance, slow planted stride. Cropped green hair with sideburns,
+   black bandana tied at the neck with a hanging tail, white shirt slightly
+   open, dark green haramaki at the waist, three swords at his right hip
+   (white-wrapped Wado hilt up), thin scar over the left eye.
+   ===================================================================== */
+.char-zoro {
+  --step: .56s; --leg: 19deg; --arm: 8deg; --bob: 1.5px;
+  --skin: #eec89f; --skin-d: #d5ac82;
+  --c1: #f2efe4; --hara: #2e5c3c; --pants: #23262e;
+  --hair: #7cc46e; --band: #1d1f26;
+}
+.char-zoro .leg { width: 13px; height: 42px; }
+.char-zoro .leg-a { left: 26px; }  .char-zoro .leg-b { left: 41px; }
+.char-zoro .leg {
+  background:
+    linear-gradient(100deg, rgba(12,12,18,0) 42%, rgba(12,12,18,.22) 100%),
+    linear-gradient(to bottom, #292c35 0 74%, #17181f 74% 100%);
+}
+.char-zoro .leg-a {
+  background:
+    linear-gradient(100deg, rgba(12,12,18,0) 32%, rgba(12,12,18,.32) 100%),
+    linear-gradient(to bottom, #1f222a 0 74%, #101116 74% 100%);
+}
+.char-zoro .leg::after {              /* black boot */
+  content: ""; position: absolute; left: -2px; width: calc(100% + 6px); bottom: 0; height: 6px;
+  border-radius: 45% 50% 3px 3px / 60% 60% 2px 2px;
+  background: linear-gradient(to bottom, #1a1b22, #0e0f13);
+}
+.char-zoro .arm { width: 10px; height: 33px; bottom: 47px; }
+.char-zoro .arm-a { left: 12px; }  .char-zoro .arm-b { left: 58px; }
+.char-zoro .arm-a {
+  background:
+    linear-gradient(100deg, rgba(12,12,18,0) 34%, rgba(12,12,18,.26) 100%),
+    linear-gradient(to bottom, #e4e0d2 0 32%, #d3cebc 32% 36%, var(--skin-d) 38% 100%);
+}
+.char-zoro .arm-b {
+  background:
+    linear-gradient(100deg, rgba(12,12,18,0) 44%, rgba(12,12,18,.12) 100%),
+    linear-gradient(to bottom, #f4f1e6 0 32%, #ddd8c6 32% 36%, var(--skin) 38% 100%);
+}
+.char-zoro .arm::after {              /* hand */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 11px; height: 9px;
+  margin-left: -5.5px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-zoro .torso { left: 18px; bottom: 32px; width: 43px; height: 42px; }
+.char-zoro .torso {
+  background:
+    radial-gradient(circle at 30% 14%, rgba(255,252,240,.55), rgba(255,252,240,0) 55%),
+    linear-gradient(100deg, #f7f4ea 0%, var(--c1) 48%, #d9d4c4 100%);
+}
+.char-zoro .torso::before {           /* shirt slightly open at the chest */
+  content: ""; position: absolute; left: 36%; top: 2%; width: 28%; height: 34%;
+  background: linear-gradient(to bottom, var(--skin), var(--skin-d));
+  clip-path: polygon(0 0, 100% 0, 58% 100%, 42% 100%);
+}
+.char-zoro .torso::after {            /* haramaki belly wrap */
+  content: ""; position: absolute; left: 4%; right: 4%; bottom: 0; height: 34%;
+  border-radius: 4px 4px 0 0;
+  background:
+    linear-gradient(#4e7f5c, #4e7f5c) 0 0 / 100% 2px no-repeat,
+    repeating-linear-gradient(84deg, rgba(0,0,0,.13) 0 2px, rgba(0,0,0,0) 2px 5px),
+    linear-gradient(to bottom, #3a6b48, var(--hara) 60%, #23422e);
+}
+.char-zoro .headw { left: 0; top: 6px; width: 80px; height: 46px; }
+.char-zoro .headw::before {           /* thick neck */
+  content: ""; position: absolute; left: 35px; top: 36px; width: 10px; height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #c69d72);
+}
+.char-zoro .head { left: 27px; top: 14px; width: 26px; height: 23px; }
+.char-zoro .head {
+  background:
+    linear-gradient(180deg, rgba(70,110,60,.28) 0 12%, rgba(70,110,60,0) 24%),
+    radial-gradient(circle at 36% 34%, #f4d6b0, var(--skin) 74%);
+}
+.char-zoro .head::before {            /* narrowed eyes */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(2.2px 1px at 33% 50%, #2e241c 60%, rgba(46,36,28,0) 66%),
+    radial-gradient(2.2px 1px at 67% 50%, #2e241c 60%, rgba(46,36,28,0) 66%);
+}
+.char-zoro .head::after {             /* thin vertical scar over the left eye */
+  content: ""; position: absolute; left: 68%; top: 16%; width: 6%; height: 34%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0) 0 16%, #a06c48 16% 84%, rgba(0,0,0,0) 84%);
+}
+.char-zoro .zo-hair { left: 25px; top: 12px; width: 30px; height: 17px; }
+.char-zoro .zo-hair {
+  background:
+    radial-gradient(4px 3px at 30% 30%, rgba(255,255,220,.25), rgba(255,255,220,0) 70%),
+    linear-gradient(to bottom, #93cf82, var(--hair) 55%, #5f9e52);
+}
+.char-zoro .zo-band { left: 28px; top: 36px; width: 24px; height: 7px; }
+.char-zoro .zo-band {
+  background: linear-gradient(to bottom, #2c2f38, var(--band) 60%, #14161c);
+}
+.char-zoro .zo-tail {                 /* bandana tail hanging on the chest */
+  left: 24px; top: 42px; width: 7px; height: 13px;
+  transform: rotate(6deg);
+  clip-path: polygon(0 0, 100% 0, 100% 74%, 50% 100%, 0 74%);
+  background: linear-gradient(to bottom, #23252d, #14161c);
+}
+.char-zoro .zo-sw1 {                  /* Wado Ichimonji: white-wrapped hilt up */
+  left: 8px; bottom: 64px; width: 7px; height: 34px;
+  transform: rotate(10deg);
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.22) 100%),
+    repeating-linear-gradient(58deg, #f4eee0 0 3px, #d9d0ba 3px 5px);
+}
+.char-zoro .zo-sw1::before {          /* tsuba */
+  content: ""; position: absolute; left: -3px; bottom: -2px; width: 13px; height: 4px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #b79a4a, #8f7634);
+}
+.char-zoro .zo-sw1::after {           /* white scabbard below the hand */
+  content: ""; position: absolute; left: -1px; bottom: -15px; width: 9px; height: 17px;
+  border-radius: 3px 3px 4px 4px;
+  background: linear-gradient(90deg, #efe9d8, #c9bfa4);
+}
+.char-zoro .zo-sw2 {                  /* the two dark swords behind */
+  left: 3px; bottom: 60px; width: 6px; height: 30px;
+  transform: rotate(17deg);
+  border-radius: 3px;
+  background: linear-gradient(90deg, #3a4054, #20242f);
+}
+.char-zoro .zo-sw2::before {          /* third blade sliver */
+  content: ""; position: absolute; left: -5px; top: 2px; width: 4px; height: 23px;
+  border-radius: 2px;
+  transform: rotate(-6deg);
+  background: linear-gradient(90deg, #4a5166, #2c3140);
+}
+.char-zoro .zo-sw2::after {           /* dark sheaths at the hip */
+  content: ""; position: absolute; left: -4px; bottom: -13px; width: 13px; height: 16px;
+  border-radius: 4px 4px 5px 5px;
+  background: linear-gradient(to bottom, #262a35, #171a21);
+}
+@keyframes idle-zo {                  /* near-still, heavy */
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1px); }
+}
+.char-zoro:not(.is-walk) .fig { animation: idle-zo 4.2s ease-in-out infinite; }
+
+/* =====================================================================
+   NAMI — slim, light, quick. Hourglass waist over a flared blue skirt,
+   long slim legs, quick light stride. Orange hair to the shoulders with
+   a flip at the ends and a fringe, white top with one subtle stripe,
+   tangerine at the hip, gold Log Pose dot on the left wrist. Idle =
+   hip sway with a hair sway.
+   ===================================================================== */
+.char-nami {
+  --step: .40s; --leg: 20deg; --arm: 15deg; --bob: 2.5px;
+  --skin: #f8d2ab; --skin-d: #e4b78d;
+  --c1: #f6f1e4; --stripe: #4d8fa6; --skirt: #4a6f9c;
+  --hair: #f28e36; --hair-d: #d97422; --tang: #ef8a3c;
+}
+.char-nami .leg { width: 9px; height: 42px; }
+.char-nami .leg-a { left: 31px; }  .char-nami .leg-b { left: 41px; }
+.char-nami .leg {
+  background:
+    linear-gradient(100deg, rgba(30,18,26,0) 42%, rgba(30,18,26,.14) 100%),
+    linear-gradient(to bottom, var(--skin) 0 82%, #f2ede2 84% 100%);
+}
+.char-nami .leg-a {
+  background:
+    linear-gradient(100deg, rgba(30,18,26,0) 34%, rgba(30,18,26,.24) 100%),
+    linear-gradient(to bottom, var(--skin-d) 0 82%, #e2dcd0 84% 100%);
+}
+.char-nami .leg::after {              /* simple white shoe */
+  content: ""; position: absolute; left: -1px; width: calc(100% + 4px); bottom: 0; height: 5px;
+  border-radius: 45% 45% 2px 2px / 55% 55% 2px 2px;
+  background: linear-gradient(to bottom, #f7f3ea, #cfc7b8);
+}
+.char-nami .arm { width: 8px; height: 30px; bottom: 49px; }
+.char-nami .arm-a { left: 20px; }  .char-nami .arm-b { left: 52px; }
+.char-nami .arm-a { background-color: var(--skin-d); background-image: linear-gradient(100deg, rgba(30,18,26,0) 34%, rgba(30,18,26,.24) 100%); }
+.char-nami .arm-b { background-color: var(--skin);    background-image: linear-gradient(100deg, rgba(30,18,26,0) 44%, rgba(30,18,26,.10) 100%); }
+.char-nami .arm::after {              /* hand */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 8px; height: 7px;
+  margin-left: -4px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-nami .arm-b::before {           /* Log Pose: gold dot on the left wrist */
+  content: ""; position: absolute; left: 50%; bottom: 4px; width: 3px; height: 3px;
+  margin-left: -1.5px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe9a8, #d8a83e 72%);
+}
+.char-nami .torso { left: 25px; bottom: 44px; width: 30px; height: 34px; }
+.char-nami .torso {
+  background:
+    radial-gradient(circle at 34% 18%, rgba(255,255,255,.6), rgba(255,255,255,0) 55%),
+    linear-gradient(100deg, #fbf7ec 0%, var(--c1) 48%, #e0d8c4 100%);
+}
+.char-nami .torso::after {            /* the single subtle stripe */
+  content: ""; position: absolute; left: 9%; right: 9%; top: 40%; height: 12%;
+  border-radius: 3px; opacity: .82;
+  background: linear-gradient(to bottom, #5fa0b8, var(--stripe));
+}
+.char-nami .na-skirt { left: 20px; bottom: 34px; width: 40px; height: 13px; }
+.char-nami .na-skirt {
+  background:
+    linear-gradient(to bottom, rgba(20,14,30,0) 62%, rgba(20,14,30,.28) 100%),
+    linear-gradient(100deg, #5c82b0 0%, var(--skirt) 50%, #3c5c86 100%);
+}
+.char-nami .headw { left: 0; top: 6px; width: 80px; height: 50px; }
+.char-nami .headw::before {           /* neck */
+  content: ""; position: absolute; left: 36px; top: 38px; width: 8px; height: 8px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #d3a877);
+}
+.char-nami .head { left: 28px; top: 16px; width: 24px; height: 22px; }
+.char-nami .head {
+  background:
+    linear-gradient(180deg, rgba(180,90,30,.22) 0 12%, rgba(180,90,30,0) 24%),
+    radial-gradient(circle at 36% 36%, #fbe0ba, var(--skin) 74%);
+}
+.char-nami .head::before {            /* eyes */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(1.9px 2.1px at 33% 54%, #4a3226 58%, rgba(74,50,38,0) 64%),
+    radial-gradient(1.9px 2.1px at 67% 54%, #4a3226 58%, rgba(74,50,38,0) 64%);
+}
+.char-nami .head::after {             /* fringe over the forehead */
+  content: ""; position: absolute; left: 5%; right: 5%; top: 0; height: 42%;
+  border-radius: 0 0 55% 55% / 0 0 90% 90%;
+  background: linear-gradient(to bottom, var(--hair), var(--hair-d));
+}
+.char-nami .na-hair { left: 18px; top: 10px; width: 44px; height: 38px; }
+.char-nami .na-hair {
+  transform-origin: 50% 12%;
+  animation: na-sway 3.8s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 38% 16%, rgba(255,222,150,.4), rgba(255,222,150,0) 52%),
+    linear-gradient(100deg, #ffa54f 0%, var(--hair) 45%, var(--hair-d) 100%);
+}
+@keyframes na-sway {                  /* the ends breathe — always on */
+  0%, 100% { transform: rotate(-1.1deg); }
+  50%      { transform: rotate(1.1deg); }
+}
+.char-nami .na-tang {                 /* tangerine held near the hip */
+  left: 57px; bottom: 40px; width: 9px; height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #ffb066, var(--tang) 74%);
+}
+.char-nami .na-tang::before {         /* tiny leaf */
+  content: ""; position: absolute; right: -2px; top: -2px; width: 4px; height: 2px;
+  border-radius: 1px;
+  background: #5a8f4a;
+}
+@keyframes idle-na {                  /* weight shifts onto one hip */
+  0%, 100% { transform: rotate(-1.3deg) translateY(0); }
+  50%      { transform: rotate(1.1deg) translateY(-1.6px); }
+}
+.char-nami:not(.is-walk) .fig { animation: idle-na 3.8s ease-in-out infinite; }
+
+/* =====================================================================
+   USOPP — lanky, wiry, slightly stooped. Long limbs, narrow shoulders,
+   loopy stride. Dark curly hair under a brown dotted bandana, THE NOSE —
+   long and exaggerated, it IS the silhouette — one-shoulder olive/khaki
+   overalls over a tan shirt with a dark satchel strap, giant Y-slingshot
+   for .is-aim.
+   ===================================================================== */
+.char-usopp {
+  --step: .5s; --leg: 27deg; --arm: 22deg; --bob: 4px;
+  --skin: #cb9a6a; --skin-d: #b3855a;
+  --c1: #c9b98a; --ovl: #8f8450; --band: #6b4a33; --hair: #3d2c1f; --wood: #7a5a38;
+}
+.char-usopp .upper { transform: rotate(2.2deg); }   /* the stoop (static) */
+.char-usopp .leg { width: 10px; height: 48px; }
+.char-usopp .leg-a { left: 29px; }  .char-usopp .leg-b { left: 41px; }
+.char-usopp .leg {
+  background:
+    linear-gradient(100deg, rgba(26,20,10,0) 42%, rgba(26,20,10,.18) 100%),
+    linear-gradient(to bottom, var(--ovl) 0 76%, #a3975f 76% 85%, #4c3d2a 87% 100%);
+}
+.char-usopp .leg-a {
+  background:
+    linear-gradient(100deg, rgba(26,20,10,0) 34%, rgba(26,20,10,.28) 100%),
+    linear-gradient(to bottom, #7c6f46 0 76%, #8f8450 76% 85%, #43361f 87% 100%);
+}
+.char-usopp .leg::after {              /* dark shoe */
+  content: ""; position: absolute; left: -1px; width: calc(100% + 5px); bottom: 0; height: 6px;
+  border-radius: 45% 45% 2px 2px / 55% 55% 2px 2px;
+  background: linear-gradient(to bottom, #3f3223, #241b10);
+}
+.char-usopp .arm { width: 9px; height: 36px; bottom: 41px; }
+.char-usopp .arm-a { left: 19px; }  .char-usopp .arm-b { left: 52px; }
+.char-usopp .arm-a {
+  background:
+    linear-gradient(100deg, rgba(26,20,10,0) 34%, rgba(26,20,10,.26) 100%),
+    linear-gradient(to bottom, #b6a775 0 38%, #a89a68 38% 42%, var(--skin-d) 44% 100%);
+}
+.char-usopp .arm-b {
+  background:
+    linear-gradient(100deg, rgba(26,20,10,0) 44%, rgba(26,20,10,.12) 100%),
+    linear-gradient(to bottom, var(--c1) 0 38%, #b3a475 38% 42%, var(--skin) 44% 100%);
+}
+.char-usopp .arm::after {             /* hand */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 9px; height: 8px;
+  margin-left: -4.5px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-usopp .torso { left: 24px; bottom: 36px; width: 32px; height: 34px; }
+.char-usopp .torso {
+  background:
+    radial-gradient(circle at 32% 16%, rgba(255,248,225,.4), rgba(255,248,225,0) 55%),
+    linear-gradient(100deg, #d6c795 0%, var(--c1) 48%, #b3a172 100%);
+}
+/* torso ::before (overall bib + one shoulder strap) and ::after (satchel
+   ribbon) are painted via PIL.paint.css in js/characters.js */
+.char-usopp .headw { left: 0; top: 8px; width: 80px; height: 48px; }
+.char-usopp .headw::before {          /* long lanky neck */
+  content: ""; position: absolute; left: 36px; top: 36px; width: 8px; height: 13px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #a87c50);
+}
+.char-usopp .head { left: 26px; top: 14px; width: 27px; height: 23px; }
+.char-usopp .head {
+  background:
+    linear-gradient(180deg, rgba(60,44,31,.26) 0 12%, rgba(60,44,31,0) 24%),
+    radial-gradient(circle at 36% 34%, #d8ab7d, var(--skin) 74%);
+}
+.char-usopp .head::before {           /* big oval eyes with pupils */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(1.6px 1.6px at 33% 55%, #241a10 55%, rgba(36,26,16,0) 60%),
+    radial-gradient(3.2px 4px at 33% 55%, rgba(253,249,238,0) 42%, #fdf9ee 46% 66%, rgba(253,249,238,0) 70%),
+    radial-gradient(1.6px 1.6px at 67% 55%, #241a10 55%, rgba(36,26,16,0) 60%),
+    radial-gradient(3.2px 4px at 67% 55%, rgba(253,249,238,0) 42%, #fdf9ee 46% 66%, rgba(253,249,238,0) 70%);
+}
+.char-usopp .us-hair { left: 22px; top: 12px; width: 37px; height: 24px; }
+.char-usopp .us-hair {
+  background:
+    radial-gradient(2.6px 2.6px at 18% 62%, rgba(90,66,44,.5), rgba(90,66,44,0) 70%),
+    radial-gradient(2.4px 2.4px at 46% 74%, rgba(90,66,44,.45), rgba(90,66,44,0) 70%),
+    radial-gradient(2.6px 2.6px at 76% 60%, rgba(90,66,44,.5), rgba(90,66,44,0) 70%),
+    linear-gradient(to bottom, #4a3624 0%, #241a10 55%, #170f08 100%);
+}
+.char-usopp .us-band { left: 23px; top: 6px; width: 35px; height: 15px; }
+.char-usopp .us-band {
+  background:
+    radial-gradient(circle 1.2px at 4px 4px, rgba(240,226,178,.85) 55%, rgba(240,226,178,0) 62%),
+    radial-gradient(circle 1.2px at 9px 7px, rgba(240,226,178,.7) 55%, rgba(240,226,178,0) 62%),
+    linear-gradient(to bottom, #7a563c 0%, var(--band) 55%, #4e3222 100%);
+  background-size: 9px 7px, 8px 6px, 100% 100%;
+  background-repeat: repeat, repeat, no-repeat;
+}
+.char-usopp .us-band::after {          /* knot + tails at the back of the head */
+  content: ""; position: absolute; left: -6px; top: 5px;
+  width: 12px; height: 8px;
+  background: linear-gradient(to bottom right, var(--band), #59392a);
+  clip-path: polygon(0 30%, 45% 0, 100% 22%, 62% 48%, 100% 68%, 40% 100%, 8% 72%);
+}
+.char-usopp .us-nose {                /* THE silhouette — tapered, soft droop */
+  left: 50px; top: 21px; width: 16px; height: 7px;
+  transform: rotate(6deg);
+  background:
+    linear-gradient(180deg, rgba(255,236,210,.34) 0 22%, rgba(60,35,15,0) 40%),
+    linear-gradient(100deg, rgba(60,35,15,0) 55%, rgba(60,35,15,.26) 100%),
+    linear-gradient(90deg, var(--skin-d), var(--skin) 62%);
+}
+.char-usopp .us-nose::after {         /* nostril dot near the tip */
+  content: ""; position: absolute; right: 10%; top: 46%; width: 2px; height: 2px;
+  border-radius: 50%;
+  background: rgba(74,45,20,.55);
+}
+.char-usopp .us-sling {               /* giant Y-slingshot, .is-aim only */
+  left: 54px; bottom: 58px; width: 24px; height: 28px;
+  opacity: 0;
+}
+.char-usopp .us-sling::before,
+.char-usopp .us-sling::after {        /* the two prongs */
+  content: ""; position: absolute; top: 0; width: 5px; height: 15px;
+  border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(90deg, #8a6842, var(--wood));
+}
+.char-usopp .us-sling::before { left: 2px; transform: rotate(-27deg); transform-origin: 50% 100%; }
+.char-usopp .us-sling::after  { right: 2px; transform: rotate(27deg); transform-origin: 50% 100%; }
+.char-usopp .us-sling .sling-band {   /* handle + rubber band between the tips */
+  position: absolute; left: 9px; top: 11px; width: 6px; height: 17px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #8a6842, var(--wood));
+}
+.char-usopp .us-sling .sling-band::before {
+  content: ""; position: absolute; left: -8px; right: -8px; top: -11px; height: 2px;
+  border-radius: 1px;
+  background: #3a2c20;
+}
+@keyframes idle-us {                  /* fidgety sway */
+  0%, 100% { transform: rotate(-.9deg) translateY(0); }
+  50%      { transform: rotate(.8deg) translateY(-1.8px); }
+}
+.char-usopp:not(.is-walk) .fig { animation: idle-us 3.2s ease-in-out infinite; }
+
+/* =====================================================================
+   SANJI — slim, tall-ish, impeccably straight. Long legs, long column
+   torso, sharp small-amplitude strut with hands near the pockets. Black
+   suit + dark shirt, blond hair with the fringe over his right eye,
+   tiny curled eyebrow above the visible eye, cigarette with a warm ember.
+   ===================================================================== */
+.char-sanji {
+  --step: .42s; --leg: 23deg; --arm: 7deg; --bob: 2px;
+  --skin: #f4d0a9; --skin-d: #dfb78c;
+  --c1: #26262f; --shirt: #1c2836;
+  --hair: #f2d766; --hair-d: #d9b64e; --ember: #ff9e4a;
+}
+.char-sanji .leg { width: 9px; height: 50px; }
+.char-sanji .leg-a { left: 31px; }  .char-sanji .leg-b { left: 41px; }
+.char-sanji .leg {
+  background:
+    linear-gradient(100deg, rgba(10,10,16,0) 42%, rgba(10,10,16,.26) 100%),
+    linear-gradient(to bottom, #2b2b34 0 87%, #101014 89% 100%);
+}
+.char-sanji .leg-a {
+  background:
+    linear-gradient(100deg, rgba(10,10,16,0) 34%, rgba(10,10,16,.36) 100%),
+    linear-gradient(to bottom, #202029 0 87%, #0b0b0f 89% 100%);
+}
+.char-sanji .leg::after {             /* black shoe with a slight point */
+  content: ""; position: absolute; left: -2px; width: calc(100% + 7px); bottom: 0; height: 5px;
+  border-radius: 2px 60% 40% 2px / 2px 70% 50% 2px;
+  background: linear-gradient(to bottom, #17171c, #0a0a0e);
+}
+.char-sanji .arm { width: 8px; height: 31px; bottom: 46px; }
+.char-sanji .arm-a { left: 22px; }  .char-sanji .arm-b { left: 50px; }
+.char-sanji .arm-a {
+  background:
+    linear-gradient(100deg, rgba(10,10,16,0) 34%, rgba(10,10,16,.3) 100%),
+    linear-gradient(to bottom, #232329 0 82%, #1a1a20 82% 100%);
+}
+.char-sanji .arm-b {
+  background:
+    linear-gradient(100deg, rgba(10,10,16,0) 44%, rgba(10,10,16,.16) 100%),
+    linear-gradient(to bottom, var(--c1) 0 82%, #202026 82% 100%);
+}
+.char-sanji .arm::after {             /* hand near pocket level */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 8px; height: 7px;
+  margin-left: -4px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-sanji .torso { left: 23px; bottom: 32px; width: 34px; height: 44px; }
+.char-sanji .torso {
+  background:
+    radial-gradient(circle at 30% 12%, rgba(255,255,255,.14), rgba(255,255,255,0) 55%),
+    linear-gradient(100deg, #343440 0%, var(--c1) 48%, #191921 100%);
+}
+.char-sanji .torso::before {          /* dark shirt in the open jacket V */
+  content: ""; position: absolute; left: 30%; top: 0; width: 40%; height: 38%;
+  background: linear-gradient(to bottom, #24324a, var(--shirt));
+  clip-path: polygon(0 0, 100% 0, 62% 100%, 38% 100%);
+}
+.char-sanji .torso::after {           /* white collar ticks meeting the V */
+  content: ""; position: absolute; left: 27%; top: 0; width: 46%; height: 20%;
+  background:
+    linear-gradient(64deg, rgba(0,0,0,0) 50%, #ece8dc 51% 64%, rgba(0,0,0,0) 66%),
+    linear-gradient(-64deg, rgba(0,0,0,0) 50%, #ece8dc 51% 64%, rgba(0,0,0,0) 66%);
+}
+.char-sanji .headw { left: 0; top: 4px; width: 80px; height: 46px; }
+.char-sanji .headw::before {          /* neck */
+  content: ""; position: absolute; left: 36px; top: 34px; width: 8px; height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #d2ab7e);
+}
+.char-sanji .head { left: 28px; top: 14px; width: 24px; height: 22px; }
+.char-sanji .head {
+  background:
+    linear-gradient(180deg, rgba(150,120,50,.26) 0 12%, rgba(150,120,50,0) 24%),
+    radial-gradient(circle at 36% 36%, #f9dcbc, var(--skin) 74%);
+}
+.char-sanji .head::before {           /* left eye visible, right covered by hair */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(1.9px 1.9px at 63% 54%, #3a2c20 58%, rgba(58,44,32,0) 64%),
+    radial-gradient(4px 5px at 31% 54%, rgba(190,160,100,.4), rgba(190,160,100,0) 70%);
+}
+.char-sanji .head::after {            /* the curled eyebrow */
+  content: ""; position: absolute; left: 55%; top: 36%; width: 9px; height: 5px;
+  border: 2px solid rgba(0,0,0,0);
+  border-top: 2px solid var(--hair-d);
+  border-radius: 50% 50% 0 0;
+  transform: rotate(-8deg);
+}
+.char-sanji .sa-hair { left: 24px; top: 8px; width: 32px; height: 26px; }
+.char-sanji .sa-hair {
+  background:
+    radial-gradient(circle at 42% 18%, rgba(255,246,190,.5), rgba(255,246,190,0) 52%),
+    linear-gradient(100deg, #f8e98e 0%, var(--hair) 45%, var(--hair-d) 100%);
+}
+.char-sanji .sa-cig {                 /* cigarette at the mouth corner */
+  left: 46px; top: 28px; width: 9px; height: 3px;
+  transform: rotate(8deg);
+  border-radius: 1.5px;
+  background: linear-gradient(90deg, #fdfdf6, #e8e4d4 70%, #d8d2be);
+}
+.char-sanji .sa-cig::after {          /* the warm ember — tiny, tasteful */
+  content: ""; position: absolute; right: -1px; top: 0; width: 3px; height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffe2ac, var(--ember) 60%, #d96a2e);
+  animation: sa-ember 2.6s ease-in-out infinite;
+}
+@keyframes sa-ember {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
+}
+.char-sanji .sa-tray {                /* present tray, .is-set only */
+  left: 44px; bottom: 42px; width: 16px; height: 10px;
+  border-radius: 2px 2px 5px 5px;
+  background: linear-gradient(to bottom, #4e6a6c, #37494b);
+  opacity: 0;
+}
+.char-sanji .sa-tray::before {        /* domed cloche */
+  content: ""; position: absolute; left: 2px; right: 2px; top: -5px; height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #748f92, #547274);
+}
+.char-sanji .sa-tray::after {         /* the knob */
+  content: ""; position: absolute; left: 50%; top: -7px; width: 4px; height: 4px;
+  margin-left: -2px; border-radius: 50%;
+  background: #8aa4a6;
+}
+@keyframes idle-sa {                  /* minimal, straight posture */
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.2px); }
+}
+.char-sanji:not(.is-walk) .fig { animation: idle-sa 3.6s ease-in-out infinite; }
+
+/* =====================================================================
+   ZEFF — big, heavyset, old. Barrel chest over a wide jacket, thick
+   limbs, long blond center-parted hair to the shoulders, thin goatee
+   braid, wooden peg leg on his right leg. Chef whites with cloth buttons
+   and a dark neckerchief. ARMS CROSSED at rest (default pose). Gestures:
+   deep nod, slow single-arm wave, and a single tear glint.
+   ===================================================================== */
+.char-zeff {
+  --step: .58s; --leg: 14deg; --arm: 8deg; --bob: 1.5px;
+  --skin: #e8bf98; --skin-d: #cfa279;
+  --c1: #f1ede0; --ker: #2c3a52;
+  --hair: #e9d8a4; --hair-d: #cbb87e;
+  --peg: #8a6848; --pants: #2c3040;
+}
+.char-zeff .leg { height: 46px; }
+.char-zeff .leg-a { left: 27px; width: 9px; }   /* the peg leg (his right) */
+.char-zeff .leg-b { left: 40px; width: 12px; }
+.char-zeff .leg-a {
+  border-radius: 4px 4px 5px 5px;
+  background:
+    linear-gradient(to bottom, var(--pants) 0 30%, rgba(0,0,0,0) 30%),
+    conic-gradient(from -70deg at 50% 42%, #6d4c33, #94714c 22%, #5c3f2a 48%, #83603e 70%, #6d4c33);
+}
+.char-zeff .leg-a::after {            /* worn wooden tip */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  border-radius: 0 0 45% 45%;
+  background: linear-gradient(to bottom, rgba(40,24,12,0), rgba(40,24,12,.5));
+}
+.char-zeff .leg-b {
+  background:
+    linear-gradient(100deg, rgba(10,10,18,0) 42%, rgba(10,10,18,.24) 100%),
+    linear-gradient(to bottom, #31354a 0 80%, #1c1f2c 80% 100%);
+}
+.char-zeff .leg-b::after {            /* boot */
+  content: ""; position: absolute; left: -2px; width: calc(100% + 6px); bottom: 0; height: 7px;
+  border-radius: 45% 50% 3px 3px / 60% 60% 2px 2px;
+  background: linear-gradient(to bottom, #1e212c, #101218);
+}
+.char-zeff .arm { width: 12px; height: 34px; bottom: 38px; }
+.char-zeff .arm-a { left: 10px; }   .char-zeff .arm-b { left: 58px; }
+.char-zeff .arm-a { transform: rotate(-80deg); }  /* crossed low on the chest */
+.char-zeff .arm-b { transform: rotate(80deg); }
+.char-zeff .arm-a {
+  background:
+    linear-gradient(180deg, rgba(30,26,20,0) 76%, rgba(30,26,20,.18) 78% 100%),
+    linear-gradient(0deg, #efe9d9 0 80%, #ded6c0 80% 100%);
+}
+.char-zeff .arm-b {
+  background:
+    linear-gradient(180deg, rgba(30,26,20,0) 76%, rgba(30,26,20,.14) 78% 100%),
+    linear-gradient(0deg, #f6f1e4 0 80%, #e5dcc6 80% 100%);
+}
+.char-zeff .arm::after {              /* hand at the end of the sleeve */
+  content: ""; position: absolute; left: 50%; bottom: -2px; width: 11px; height: 9px;
+  margin-left: -5.5px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, var(--skin), var(--skin-d) 78%);
+}
+.char-zeff .torso { left: 13px; bottom: 30px; width: 54px; height: 46px; }
+.char-zeff .torso {
+  background:
+    radial-gradient(circle at 30% 14%, rgba(255,252,242,.7), rgba(255,252,242,0) 55%),
+    linear-gradient(100deg, #f7f3e6 0%, var(--c1) 48%, #ddd6c2 100%);
+}
+.char-zeff .torso::before {           /* dark neckerchief under the collar */
+  content: ""; position: absolute; left: 36%; top: 0; width: 28%; height: 17%;
+  border-radius: 0 0 45% 45%;
+  background:
+    radial-gradient(5px 4px at 50% 100%, #1f2a3e 62%, rgba(31,42,62,0) 68%),
+    linear-gradient(to bottom, #35466a, var(--ker));
+}
+.char-zeff .torso::after {            /* double-breasted cloth buttons */
+  content: ""; position: absolute; left: 20%; right: 20%; top: 22%; bottom: 8%;
+  background-image:
+    linear-gradient(90deg, rgba(0,0,0,0) calc(50% - .5px), rgba(120,105,70,.28) calc(50% - .5px) calc(50% + .5px), rgba(0,0,0,0) calc(50% + .5px)),
+    radial-gradient(circle 2.3px, #cfc4a8 55%, rgba(207,196,168,0) 62%),
+    radial-gradient(circle 2.3px, #cfc4a8 55%, rgba(207,196,168,0) 62%);
+  background-position: 0 0, calc(50% - 12px) 4px, calc(50% + 12px) 4px;
+  background-size: 100% 100%, 11px 15px, 11px 15px;
+  background-repeat: no-repeat, repeat-y, repeat-y;
+}
+.char-zeff .headw { left: 0; top: 2px; width: 80px; height: 52px; }
+.char-zeff .headw::before {           /* thick old neck */
+  content: ""; position: absolute; left: 34px; top: 36px; width: 12px; height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, var(--skin-d), #c2956c);
+}
+.char-zeff .head { left: 26px; top: 14px; width: 28px; height: 25px; }
+.char-zeff .head {
+  background:
+    linear-gradient(180deg, rgba(120,90,55,.2) 0 10%, rgba(120,90,55,0) 22%),
+    radial-gradient(circle at 36% 34%, #f0d0aa, var(--skin) 74%);
+}
+.char-zeff .head::before {            /* small old eyes */
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(1.7px 1.7px at 33% 52%, #3a2c20 58%, rgba(58,44,32,0) 64%),
+    radial-gradient(1.7px 1.7px at 67% 52%, #3a2c20 58%, rgba(58,44,32,0) 64%);
+}
+.char-zeff .ze-hair { left: 16px; top: 12px; width: 48px; height: 38px; }
+.char-zeff .ze-hair {
+  background:
+    radial-gradient(circle at 40% 10%, rgba(255,250,220,.5), rgba(255,250,220,0) 46%),
+    linear-gradient(90deg, rgba(0,0,0,0) calc(50% - 1px), rgba(150,125,70,.3) calc(50% - 1px) calc(50% + 1px), rgba(0,0,0,0) calc(50% + 1px)),
+    linear-gradient(100deg, #f2e4b4 0%, var(--hair) 45%, var(--hair-d) 100%);
+}
+.char-zeff .ze-beard {                /* the thin braid at the chin */
+  left: 36px; top: 36px; width: 8px; height: 13px;
+  background:
+    repeating-linear-gradient(0deg, rgba(120,95,50,.3) 0 2px, rgba(120,95,50,0) 2px 5px),
+    linear-gradient(to bottom, var(--hair), var(--hair-d));
+}
+.char-zeff .ze-tear {                 /* the farewell tear glint, .is-tear only */
+  left: 47px; top: 22px; width: 4px; height: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(255,255,255,.95), rgba(220,235,255,.55) 60%, rgba(220,235,255,0) 72%);
+  opacity: 0;
+}
+@keyframes idle-ze {                  /* heavy chest breath */
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50%      { transform: translateY(-1.6px) scale(1.006, .994); }
+}
+.char-zeff:not(.is-walk) .fig { animation: idle-ze 3.8s ease-in-out infinite; }
+
+/* =====================================================================
+   GESTURES — short, transform/opacity only, run once, end at the resting
+   pose (kept after idle/walk rules so a gesture outranks the idle).
+   ===================================================================== */
+
+/* --- luffy: both arms up + double hop --- */
+.char-luffy.is-cheer .fig   { animation: cheer-hop   1.25s cubic-bezier(.34,.6,.4,1) 1; }
+.char-luffy.is-cheer .arm-a { animation: cheer-arm-a 1.25s ease-in-out 1; }
+.char-luffy.is-cheer .arm-b { animation: cheer-arm-b 1.25s ease-in-out 1; }
+@keyframes cheer-hop {
+  0%   { transform: translateY(0); }
+  22%  { transform: translateY(-9px); }
+  42%  { transform: translateY(0); }
+  60%  { transform: translateY(-5px); }
+  78%  { transform: translateY(0); }
+  100% { transform: translateY(0); }
+}
+@keyframes cheer-arm-a {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(148deg); }
+  82%  { transform: rotate(152deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes cheer-arm-b {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(-148deg); }
+  82%  { transform: rotate(-152deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- luffy & usopp: full arm extension, slight lean into it --- */
+.char-luffy.is-point .arm-b,
+.char-usopp.is-point .arm-b { animation: point-arm 1.15s cubic-bezier(.3,.7,.35,1) 1; }
+.char-luffy.is-point .fig,
+.char-usopp.is-point .fig   { animation: point-lean 1.15s ease-in-out 1; }
+@keyframes point-arm {
+  0%   { transform: rotate(0deg); }
+  16%  { transform: rotate(-86deg); }
+  78%  { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes point-lean {
+  0%   { transform: rotate(0deg); }
+  16%  { transform: rotate(-2deg); }
+  78%  { transform: rotate(-2deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- zoro: sword arm crosses the chest, body settles lower --- */
+.char-zoro.is-stance .arm-b { animation: stance-arm     1.45s cubic-bezier(.3,.7,.35,1) 1; }
+.char-zoro.is-stance .arm-a { animation: stance-off-arm 1.45s ease-in-out 1; }
+.char-zoro.is-stance .fig   { animation: stance-settle  1.45s ease-in-out 1; }
+@keyframes stance-arm {
+  0%   { transform: rotate(0deg); }
+  22%  { transform: rotate(96deg); }
+  76%  { transform: rotate(96deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes stance-off-arm {
+  0%   { transform: rotate(0deg); }
+  22%  { transform: rotate(-20deg); }
+  76%  { transform: rotate(-20deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes stance-settle {
+  0%   { transform: translateY(0); }
+  22%  { transform: translateY(-2px); }
+  76%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+
+/* --- everyone: a single head dip (encounter beats nod every character) --- */
+.char.is-nod .headw { animation: nod-head .95s ease-in-out 1; }
+@keyframes nod-head {
+  0%   { transform: translateY(0)   scaleY(1); }
+  40%  { transform: translateY(5px) scaleY(.9); }
+  100% { transform: translateY(0)   scaleY(1); }
+}
+
+/* --- zeff: one deep, slow head bow --- */
+.char-zeff.is-nod .headw { animation: nod-deep 1.4s ease-in-out 1; }
+@keyframes nod-deep {
+  0%   { transform: translateY(0)    scaleY(1); }
+  36%  { transform: translateY(9px)  scaleY(.8); }
+  60%  { transform: translateY(8px)  scaleY(.82); }
+  100% { transform: translateY(0)    scaleY(1); }
+}
+
+/* --- nami: arm arcs up-and-out, the tangerine flies --- */
+.char-nami.is-toss .arm-b { animation: toss-arm 1.45s ease-in-out 1; }
+.char-nami.is-toss .na-tang { animation: toss-tang 1.45s ease-in-out 1; }
+@keyframes toss-arm {
+  0%   { transform: rotate(0deg); }
+  18%  { transform: rotate(36deg); }
+  34%  { transform: rotate(-118deg); }
+  55%  { transform: rotate(-64deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes toss-tang {
+  0%   { transform: translate(0,0);        opacity: 1; }
+  30%  { transform: translate(1px,-7px);   opacity: 1; }
+  46%  { transform: translate(26px,-34px); opacity: 1; }
+  64%  { transform: translate(46px,-12px); opacity: 1; }
+  78%  { transform: translate(52px,2px);   opacity: 0; }
+  96%  { transform: translate(0,3px);      opacity: 0; }
+  100% { transform: translate(0,0);        opacity: 1; }
+}
+
+/* --- nami: weight onto one hip, hand finds it, head tilts --- */
+.char-nami.is-hip .fig   { animation: hip-cock 1.35s ease-in-out 1; }
+.char-nami.is-hip .arm-b { animation: hip-arm  1.35s ease-in-out 1; }
+.char-nami.is-hip .headw { animation: hip-head 1.35s ease-in-out 1; }
+@keyframes hip-cock {
+  0%   { transform: rotate(0deg) translateY(0); }
+  30%  { transform: rotate(-2.4deg) translateY(1px); }
+  75%  { transform: rotate(-2.4deg) translateY(1px); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+@keyframes hip-arm {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(34deg); }
+  75%  { transform: rotate(34deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes hip-head {
+  0%   { transform: rotate(0deg); }
+  30%  { transform: rotate(3.5deg); }
+  75%  { transform: rotate(3.5deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- usopp: slingshot rises to eye level, takes aim --- */
+.char-usopp.is-aim .us-sling { animation: aim-sling 1.45s ease-out 1; }
+.char-usopp.is-aim .arm-b { animation: aim-arm   1.45s ease-in-out 1; }
+.char-usopp.is-aim .headw { animation: aim-head  1.45s ease-in-out 1; }
+@keyframes aim-sling {
+  0%   { opacity: 0; transform: translate(3px,16px); }
+  20%  { opacity: 1; transform: translate(0,0); }
+  82%  { opacity: 1; transform: translate(0,0); }
+  100% { opacity: 0; transform: translate(2px,12px); }
+}
+@keyframes aim-arm {
+  0%   { transform: rotate(0deg); }
+  20%  { transform: rotate(-98deg); }
+  82%  { transform: rotate(-98deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes aim-head {
+  0%   { transform: rotate(0deg) translateY(0); }
+  25%  { transform: rotate(3deg) translateY(1px); }
+  80%  { transform: rotate(3deg) translateY(1px); }
+  100% { transform: rotate(0deg) translateY(0); }
+}
+
+/* --- usopp: chest out, fists to hips --- */
+.char-usopp.is-proud .fig   { animation: proud-fig   1.4s ease-in-out 1; }
+.char-usopp.is-proud .torso { animation: proud-chest 1.4s ease-in-out 1; }
+.char-usopp.is-proud .arm-a { animation: proud-arm-a 1.4s ease-in-out 1; }
+.char-usopp.is-proud .arm-b { animation: proud-arm-b 1.4s ease-in-out 1; }
+@keyframes proud-fig {
+  0%   { transform: translateY(0); }
+  25%  { transform: translateY(-2px); }
+  80%  { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+@keyframes proud-chest {
+  0%   { transform: scale(1,1); }
+  25%  { transform: scale(1.03,1.06); }
+  80%  { transform: scale(1.03,1.06); }
+  100% { transform: scale(1,1); }
+}
+@keyframes proud-arm-a {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(34deg); }
+  80%  { transform: rotate(34deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes proud-arm-b {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-34deg); }
+  80%  { transform: rotate(-34deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- sanji: tray presents, holds, lowers away --- */
+.char-sanji.is-set .sa-tray { animation: set-tray 1.45s ease-in-out 1; }
+.char-sanji.is-set .arm-b   { animation: set-arm  1.45s ease-in-out 1; }
+@keyframes set-tray {
+  0%   { opacity: 0; transform: translateY(12px); }
+  16%  { opacity: 1; transform: translateY(0); }
+  74%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(14px); }
+}
+@keyframes set-arm {
+  0%   { transform: rotate(0deg); }
+  16%  { transform: rotate(-16deg); }
+  74%  { transform: rotate(-16deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- sanji: rotateY spin flourish (0 -> 360 lands exactly neutral) --- */
+.char-sanji.is-flourish .fig   { animation: flourish-spin 1.4s cubic-bezier(.3,.55,.35,1) 1; }
+.char-sanji.is-flourish .arm-b { animation: flourish-arm  1.4s ease-in-out 1; }
+@keyframes flourish-spin {
+  0%   { transform: rotateY(0deg); }
+  18%  { transform: rotateY(64deg); }
+  82%  { transform: rotateY(296deg); }
+  100% { transform: rotateY(360deg); }
+}
+@keyframes flourish-arm {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-155deg); }
+  85%  { transform: rotate(-150deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* --- zeff: one arm rises from the crossed rest, slow wave, returns --- */
+.char-zeff.is-wave .arm-b { animation: wave-ze 2.3s ease-in-out 1; }
+@keyframes wave-ze {
+  0%   { transform: rotate(96deg); }
+  22%  { transform: rotate(-138deg); }
+  38%  { transform: rotate(-152deg); }
+  54%  { transform: rotate(-142deg); }
+  70%  { transform: rotate(-154deg); }
+  100% { transform: rotate(96deg); }
+}
+
+/* --- zeff: a single tear glint slides down the cheek, then fades --- */
+.char-zeff.is-tear .ze-tear { animation: tear-run 2.2s ease-in 1; }
+@keyframes tear-run {
+  0%   { opacity: 0;  transform: translate3d(0,0,0); }
+  10%  { opacity: .95; transform: translate3d(0,.5px,0); }
+  62%  { opacity: .9;  transform: translate3d(.5px,9px,0); }
+  100% { opacity: 0;   transform: translate3d(1px,10px,0); }
+}
